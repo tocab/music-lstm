@@ -1,0 +1,6 @@
+data/
+.venv/
+saved_models/
+songs/
+runs/
+*.zip

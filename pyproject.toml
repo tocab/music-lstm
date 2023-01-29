@@ -1,0 +1,30 @@
+[tool.poetry]
+name = "pytorch-lstm"
+version = "0.1.0"
+description = "LSTM in pytorch making music"
+authors = ["Tobias Cabanski <t.cabanski@posteo.de>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "~3.9"
+torch = { version = "1.13.0+cu117", source = "torchcu117" }
+torchvision = "*"
+pyfluidsynth = "*"
+pretty-midi = "*"
+tqdm = "*"
+numpy = "<1.20"
+sounddevice = "*"
+pandas = "*"
+matplotlib = "*"
+seaborn = "*"
+tensorboard = "*"
+
+[[tool.poetry.source]]
+name = "torchcu117"
+url = "https://download.pytorch.org/whl/cu117"
+default = false
+secondary = true
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
