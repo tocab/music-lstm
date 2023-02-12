@@ -76,7 +76,7 @@ class LSTMModel(nn.Module):
         lstm_output, _ = self.lstm(all_features)
         max_pooled, _ = torch.max(lstm_output, 1)
 
-        pitch_output = self.pitch_output_layer(max_pooled)
+        pitch_output = torch.squeeze(self.pitch_output_layer(max_pooled))
         step_output = torch.squeeze(self.step_output_layer(max_pooled))
         duration_output = torch.squeeze(self.duration_output_layer(max_pooled))
 

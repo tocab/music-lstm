@@ -7,42 +7,76 @@ import itertools
 import random
 import multiprocessing as mp
 from tqdm import tqdm
-from typing import Dict, List, Tuple
+from typing import Callable, Dict, List, Tuple
 
 import numpy as np
 from torch.utils.data import IterableDataset
-from extract_notes import midi_to_notes
+from src.extract_notes import midi_to_notes
 
 # Used for initial preprocessing
 N_CPUS = 8
 
 
-def process_data(input_data: Tuple[str, int]) -> List[Dict[str, np.ndarray]]:
+def process_data(input_data: Tuple[str, int, int]) -> List[Dict[str, np.ndarray]]:
     """
     Process input file by creating a sliding window of length sequence_length for the input notes and the output note.
 
     :param input_data: Tuple of (filename, sequence_length)
 
-    :return:
+    :return: Preprocessed data, divided in input data and output data
     """
     filename = input_data[0]
-    sequence_length = input_data[1]
+    input_sequence_length = input_data[1]
+    output_sequence_length = input_data[2]
     notes = midi_to_notes(filename)
     indices = [
-        (start_index, start_index + sequence_length)
-        for start_index in range(len(notes["pitch"]) - sequence_length)
+        (start_index, start_index + input_sequence_length, start_index + input_sequence_length + output_sequence_length)
+        for start_index in range(len(notes["pitch"]) - input_sequence_length - output_sequence_length)
     ]
 
     return [
         {
-            "input_pitch": notes["pitch"][start_index:end_index],
-            "input_step": notes["step"][start_index:end_index],
-            "input_duration": notes["duration"][start_index:end_index],
-            "output_pitch": notes["pitch"][end_index],
-            "output_step": notes["step"][end_index],
-            "output_duration": notes["duration"][end_index],
+            "input_pitch": notes["pitch"][input_start_index: input_end_index],
+            "input_step": notes["step"][input_start_index: input_end_index],
+            "input_duration": notes["duration"][input_start_index: input_end_index],
+            "output_pitch": notes["pitch"][input_end_index: output_end_index],
+            "output_step": notes["step"][input_end_index: output_end_index],
+            "output_duration": notes["duration"][input_end_index: output_end_index],
         }
-        for start_index, end_index in indices
+        for input_start_index, input_end_index, output_end_index in indices
+    ]
+
+
+def process_data_seq2seq(input_data: Tuple[str, int, int]) -> List[Dict[str, np.ndarray]]:
+    """
+    Process input file by creating a sliding window of length sequence_length for the input notes and the output note.
+
+    :param input_data: Tuple of (filename, sequence_length)
+
+    :return: Preprocessed data, divided in encoder input, decoder input and decoder output
+    """
+    filename = input_data[0]
+    input_sequence_length = input_data[1]
+    output_sequence_length = input_data[2]
+    notes = midi_to_notes(filename)
+    indices = [
+        (start_index, start_index + input_sequence_length, start_index + input_sequence_length + output_sequence_length)
+        for start_index in range(len(notes["pitch"]) - input_sequence_length - output_sequence_length)
+    ]
+
+    return [
+        {
+            "encoder_input_pitch": notes["pitch"][input_start_index: input_end_index],
+            "encoder_input_step": notes["step"][input_start_index: input_end_index],
+            "encoder_input_duration": notes["duration"][input_start_index: input_end_index],
+            "decoder_input_pitch": np.concatenate([[0], notes["pitch"][input_end_index: output_end_index-1]]),
+            "decoder_input_step": np.concatenate([[0], notes["step"][input_end_index: output_end_index-1]]),
+            "decoder_input_duration": np.concatenate([[0], notes["duration"][input_end_index: output_end_index-1]]),
+            "decoder_output_pitch": notes["pitch"][input_end_index: output_end_index],
+            "decoder_output_step": notes["step"][input_end_index: output_end_index],
+            "decoder_output_duration": notes["duration"][input_end_index: output_end_index],
+        }
+        for input_start_index, input_end_index, output_end_index in indices
     ]
 
 
@@ -51,16 +85,25 @@ class MidiDataset(IterableDataset):
     Define midi dataset class from IterableDataset.
     """
 
-    def __init__(self, filenames: List[str], sequence_length: int = 50):
+    def __init__(
+            self,
+            filenames: List[str],
+            input_sequence_length: int,
+            output_sequence_length: int,
+            data_processing_method: Callable[[Tuple[str, int, int]], List[Dict[str, np.ndarray]]]
+    ):
         """
         Init function.
 
         :param filenames: Names of the input midi files.
-        :param sequence_length: Sequence length for the input sequence
+        :param input_sequence_length: Sequence length for the input
+        :param output_sequence_length: Sequence length for the output
         """
         super(MidiDataset).__init__()
         self.filenames = filenames
-        self.sequence_length = sequence_length
+        self.input_sequence_length = input_sequence_length
+        self.output_sequence_length = output_sequence_length
+        self.data_processing_method = data_processing_method
 
         self.data = []
 
@@ -73,9 +116,9 @@ class MidiDataset(IterableDataset):
                 itertools.chain.from_iterable(
                     tqdm(
                         p.imap(
-                            process_data,
+                            self.data_processing_method,
                             [
-                                (filename, self.sequence_length)
+                                (filename, self.input_sequence_length, self.output_sequence_length)
                                 for filename in self.filenames
                             ],
                         ),
@@ -115,12 +158,3 @@ class MidiDataset(IterableDataset):
         Returns output generator.
         """
         return self.get_data()
-
-
-if __name__ == "__main__":
-    filenames = glob.glob("data/maestro-v3.0.0/**/*.mid*")
-    ds = MidiDataset(filenames)
-    ds.preprocess_data()
-    ds.shuffle_data()
-    validation_data = ds.sample_data(0.2)
-    print(len(validation_data))
