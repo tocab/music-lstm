@@ -25,11 +25,11 @@ DEVICE = (
 # DEVICE = "cpu"
 INPUT_SEQUENCE_LENGTH = 10
 OUTPUT_SEQUENCE_LENGTH = 50
-SONG_LENGTH = 1000
+SONG_LENGTH = 600
 INSTRUMENT_NAME = "Acoustic Grand Piano"
 SAMPLING_RATE = 16000.0
-MODEL = "saved_models/2023-02-12T10:32:15.227706/model_epoch_2.pth"
-BEAM_WIDTH = 10
+MODEL = "saved_models/2023-02-07T08:17:07.282464/model_epoch_0.pth"
+BEAM_WIDTH = 20
 COUNT_PITCHES = 128
 
 filenames = glob.glob("data/maestro-v3.0.0/**/*.mid*")
@@ -165,9 +165,9 @@ for step in tqdm(range(INPUT_SEQUENCE_LENGTH, SONG_LENGTH, OUTPUT_SEQUENCE_LENGT
 
 output_df = pd.DataFrame(
     {
-        "pitch": encoder_input_pitch.cpu().detach().flatten(),
-        "step": encoder_input_step.cpu().detach().flatten(),
-        "duration": encoder_input_duration.cpu().detach().flatten(),
+        "pitch": encoder_input_pitch[0, :].cpu().detach().flatten(),
+        "step": encoder_input_step[0, :].cpu().detach().flatten(),
+        "duration": encoder_input_duration[0, :].cpu().detach().flatten(),
     }
 )
 

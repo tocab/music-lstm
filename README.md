@@ -32,6 +32,10 @@ more data that has been generated from the LSTM until the whole input sequence i
 This lead to an unnatural melody with a lot of repetitions. In my cases, the last 500 notes of a 
 song only switch between 2 notes.
 
+Generated example:
+
+https://youtu.be/vltLIo2g24M
+
 ### Iteration 2: Sequence to sequence
 In the second iteration, a sequence to sequence approach is tried out to generate music. For that,
 first the input data needs to be changed to input for the encoder model, input for the decoder model
@@ -55,3 +59,9 @@ Overall, the quality of the generated songs is better than in the next token pre
 the problem of being stuck in one or two notes is being solved by only generating 50 tokens by the
 decoder and then creating a new encoding with the last 10 tokens by the encoder, which resets
 repetitions in some cases.
+
+Generated examples:
+
+https://youtu.be/wg0ReW4MNbs
+
+https://youtu.be/vsZXhZcYkVs

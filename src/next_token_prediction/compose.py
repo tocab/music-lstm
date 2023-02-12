@@ -23,10 +23,10 @@ DEVICE = (
 )
 INPUT_SEQUENCE_LENGTH = 10
 OUTPUT_SEQUENCE_LENGTH = 1
-SONG_LENGTH = 1000
+SONG_LENGTH = 500
 INSTRUMENT_NAME = "Acoustic Grand Piano"
 SAMPLING_RATE = 16000.0
-MODEL = "saved_models/2023-02-12T10:23:33.782217/model_epoch_1.pth"
+MODEL = "saved_models/2023-01-28T09:29:31.431293/model_epoch_7.pth"
 
 filenames = glob.glob("data/maestro-v3.0.0/**/*.mid*")
 ds = MidiDataset(
